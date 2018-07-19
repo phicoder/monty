@@ -61,6 +61,7 @@ def commandExists(command):
     return True
 
 
-def run(command):
+def run(argv):
+    command = argv[1]
     if commandExists(command):
-        commandsMap[command]['run']()
+        commandsMap[command]['run'](argv)

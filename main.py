@@ -6,7 +6,7 @@ def main():
     if len(argv) == 1:
         print(commands.usage())
         return 0
-    commands.run(argv[1])
+    commands.run(argv)
 
 
 if __name__ == '__main__':
