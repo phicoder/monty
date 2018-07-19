@@ -4,7 +4,8 @@ import shutil
 import json
 import tempfile
 from io import BytesIO
-from zipfile import ZipFile
+import zipfile
+import tarfile
 
 
 class colors:
@@ -26,6 +27,8 @@ workDir = os.getcwd()
 
 def run(argv):
     if len(argv) < 3:
+        print(
+            'Please provide a package name: %smonty require [package name]%s' % (colors.OKGREEN, colors.ENDC))
         return 0
 
     package = argv[2]
@@ -83,7 +86,7 @@ def processPackage(meta, version):
     for meta in reversed(release):
         if (meta['packagetype'] == 'sdist'):
             downloadUrl = meta['url']
-            downloadPackage(downloadUrl, package, version)
+            installPackage(downloadUrl, package, version)
             return
 
 
@@ -104,26 +107,16 @@ def updateJson(package, version):
         json.dump(data, f, indent=4)
 
 
-vendorDir = './vendor'
+pythonPackagesDir = os.path.join(workDir, 'python_packages')
+sitePackagesDir = os.path.join(
+    pythonPackagesDir, 'lib/python3.5/site-packages')
 
 
-def downloadPackage(url, packageName, version):
-    with tempfile.TemporaryDirectory() as tmpdirname:
-        resp = urllib.request.urlopen(url)
-        zipfile = ZipFile(BytesIO(resp.read()))
-        zipfile.extractall(tmpdirname)
+def installPackage(url, packageName, version):
+    if not os.path.exists(sitePackagesDir):
+        os.makedirs(sitePackagesDir, exist_ok=True)
+        shutil.copy(os.path.join(os.path.dirname(__file__), 'init.txt'), os.path.join(
+            pythonPackagesDir, '__init__.py'))
 
-        path = os.path.join(tmpdirname, '%s-%s' % (packageName, version))
-        print('export PYTHONPATH="%s/lib/python3.5/site-packages"' % path)
-        os.system('python %s/setup.py install --prefix=%s' % (path, path))
-
-        if not os.path.exists(vendorDir):
-            os.mkdir(vendorDir)
-            f = open(os.path.join(vendorDir, '__init__.py'), 'w+')
-            f.close()
-
-    # print(os.listdir(os.path.join(tmpdirname, '%s-%s' %
-        #   (packageName, version), 'lib/python3.5/site-packages')))
-
-    # shutil.move(os.path.join(tmpdirname, '%s-%s' %
-        #  (packageName, version), 'lib/python3.5/site-packages', packageName), vendorDir)
+    os.system("pip install -qqq --install-option=\"--prefix=%s\" %s==%s" %
+              (pythonPackagesDir, packageName, version))
